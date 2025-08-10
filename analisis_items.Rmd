@@ -1,0 +1,405 @@
+---
+title: "Modelo de Rasch"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+## Resultados cuarto primaria
+```{r}
+library(readxl)
+library(tidyverse)
+library(eRm)
+library(TAM)
+library(mirt)
+cuarto0 <- read_xlsx("data/Cuarto.xlsx")
+```
+
+
+#### Número de estudiantes de cuarto primaria evaluados y promedio obtenido en cada departamento.
+```{r}
+cuarto0 %>% mutate(Departamento = as.factor(Departamento),
+                   Municipio = as.factor(Municipio)) %>% 
+  group_by(Departamento) %>% 
+  summarise(Estudiantes = n(), 
+            Promedio = mean(Nota), SD = sd(Nota)) %>% 
+  arrange(Promedio)
+```
+
+
+#### Distribución de notas de los alumnos de cuarto primaria
+```{r}
+x <- seq(0, 100, length.out = 100)
+y <- dnorm(x, mean(cuarto0$Nota), sd(cuarto0$Nota))
+campana <- data.frame(x = x, y = y)
+  
+cuarto0 %>% ggplot(aes(x = Nota)) +
+  geom_histogram(binwidth = 100/30, 
+                 color = "blue4", fill = "deepskyblue3", 
+                 center = 100/60) +
+  geom_line(data = campana, mapping = aes(x, y*14270/3)) +
+  ylab("Frecuencia")
+```
+
+```{r}
+moda  <- function(x)
+{
+  tabla <- table(x)
+  return(as.numeric(names(tabla)[tabla==max(tabla)]))
+}
+
+```
+
+
+#### Datos estadísticos de las notas obtenidas por los estudiantes de cuarto primaria
+```{r}
+library(e1071)
+cuarto <- data.frame(Media = mean(cuarto0$Nota),
+                     Mediana = median(cuarto0$Nota),
+                     Moda = moda(cuarto0$Nota),
+                     DesviacionEstandar = sd(cuarto0$Nota),
+                     Minimo = min(cuarto0$Nota),
+                     Maximo = max(cuarto0$Nota),
+                     Asimetria = skewness(cuarto0$Nota),
+                     Curtosis = kurtosis(cuarto0$Nota))
+as.data.frame(t(cuarto))
+```
+
+
+#### Porcentaje de estudiantes que contestaron correctamente cada ítem junto con su dificultad calculada usando el Modelo de Rasch.
+```{r}
+respuestasc <- cuarto0[, 44:73]
+rm_sumc <- RM(respuestasc)
+tabc <- data.frame(porcentaje = colSums(respuestasc)/14.27,
+                   dificultad = -coef(rm_sumc)) %>% arrange(porcentaje)
+tabc
+```
+
+
+#### Resumen estadístico de los ítems.
+```{r}
+eRm::itemfit(eRm::person.parameter(rm_sumc))
+```
+
+
+#### Coeficiente alfa de Cronbach
+```{r}
+library(psych)
+alfa <- psych::alpha(respuestasc, check.keys=TRUE)
+alfa$total$raw_alpha
+```
+
+
+#### Mapa Person-Item de los ítems de la prueba realizada a los alumnos de cuarto primaria.
+```{r}
+plotPImap(rm_sumc, item.subset = 1:15) #Para ordenar: sorted = TRUE
+plotPImap(rm_sumc, item.subset = 16:30)
+```
+
+
+#### Curva característica del ítem 20
+```{r}
+plotICC(rm_sumc, item.subset = 20, empICC = list("raw"), empCI = list())
+```
+
+
+
+## Resultados quinto primaria
+```{r}
+quinto0 <- read_xlsx("data/Quinto.xlsx")
+```
+
+
+#### Número de estudiantes de quinto primaria evaluados y promedio obtenido en cada departamento.
+```{r}
+quin <- quinto0 %>% mutate(Departamento = as.factor(Departamento)) %>% 
+  group_by(Departamento) %>% 
+  summarise(Estudiantes = n(), 
+            Promedio = mean(Nota), SD = sd(Nota)) %>% 
+  arrange(Promedio)
+quin
+```
+
+
+#### Distribución de notas de los alumnos de quinto primaria
+```{r}
+x <- seq(0, 100, length.out = 100)
+y <- dnorm(x, mean(quinto0$Nota), sd(quinto0$Nota))
+campana <- data.frame(x = x, y = y)
+  
+quinto0 %>% ggplot(aes(x = Nota)) +
+  geom_histogram(binwidth = 100/33, 
+                 color = "blue4", fill = "deepskyblue3", 
+                 center = 100/66) +
+  geom_line(data = campana, mapping = aes(x, y*135300/33)) +
+  ylab("Frecuencia")
+```
+
+
+#### Porcentaje de estudiantes que contestaron correctamente cada ítem junto con su dificultad calculada usando el Modelo de Rasch
+```{r}
+respuestasq <- quinto0[, 47:79]
+rm_sumq <- RM(respuestasq)
+tabq <- data.frame(promedio = colSums(respuestasq)/13.53, 
+                   dificultad = -coef(rm_sumq)) %>% arrange(promedio)
+tabq
+```
+
+
+#### Datos estadísticos de las notas obtenidas por los estudiantes de quinto primaria
+```{r}
+quinto <- data.frame(Media = mean(quinto0$Nota),
+                     Mediana = median(quinto0$Nota),
+                     Moda = moda(quinto0$Nota),
+                     DesviacionEstandar = sd(quinto0$Nota),
+                     Minimo = min(quinto0$Nota),
+                     Maximo = max(quinto0$Nota),
+                     simetria = skewness(quinto0$Nota),
+                     Curtosis = kurtosis(quinto0$Nota))
+as.data.frame(t(quinto))
+```
+
+
+#### Resumen estadístico de los ítems.
+```{r}
+eRm::itemfit(eRm::person.parameter(rm_sumq))
+```
+
+
+#### Coeficiente alfa de Cronbach
+```{r}
+alfa <- psych::alpha(respuestasq, check.keys=TRUE)
+alfa$total$raw_alpha
+```
+
+
+#### Mapa Person-Item con los ítems de la prueba realizada a los alumnos de quinto primaria.
+```{r}
+plotPImap(rm_sumq, item.subset = 1:17)
+plotPImap(rm_sumq, item.subset = 18:33)
+```
+
+
+#### Curva característica del ítem 1
+```{r}
+plotICC(rm_sumq, item.subset =4, empICC = list("raw"), empCI = list())
+```
+
+
+
+## Resultados sexto primaria
+
+```{r}
+sexto0 <- read_xlsx("data/Sexto.xlsx")
+```
+
+
+#### Número de estudiantes de sexto primaria evaluados y promedio obtenido en cada departamento.
+```{r}
+se <- sexto0 %>% mutate(Departamento = as.factor(Departamento)) %>% 
+  group_by(Departamento) %>% 
+  summarise(Estudiantes = n(), 
+            Promedio = mean(Nota), SD = sd(Nota)) %>% 
+  arrange(Promedio)
+se
+```
+
+
+#### Distribución de notas de los alumnos de sexto primaria
+```{r}
+x <- seq(0, 100, length.out = 100)
+y <- dnorm(x, mean(quinto0$Nota), sd(sexto0$Nota))
+campana <- data.frame(x = x, y = y)
+  
+sexto0 %>% ggplot(aes(x = Nota)) +
+  geom_histogram(binwidth = 100/33, 
+                 color = "blue4", fill = "deepskyblue3", 
+                 center = 100/66) +
+  geom_line(data = campana, mapping = aes(x, y*144100/33)) +
+  ylab("Frecuencia")
+```
+
+
+#### Datos estadísticos de las notas obtenidas por los estudiantes de sexto primaria
+```{r}
+sexto <- data.frame(Media = mean(sexto0$Nota),
+                     Mediana = median(sexto0$Nota),
+                     Moda = moda(sexto0$Nota),
+                     DesviacionEstandar = sd(sexto0$Nota),
+                     Minimo = min(sexto0$Nota),
+                     Maximo = max(sexto0$Nota),
+                     simetria = skewness(sexto0$Nota),
+                     Curtosis = kurtosis(sexto0$Nota))
+as.data.frame(t(sexto))
+```
+
+
+#### Porcentaje de estudiantes que contestaron correctamente cada ítem junto con su dificultad calculada usando el Modelo de Rasch
+```{r}
+respuestass <- sexto0[, 47:79]
+rm_sums <- RM(respuestass)
+tabs <- data.frame(promedio = colSums(respuestass)/14.41, 
+                   dificultad = -coef(rm_sums)) %>% arrange(promedio)
+tabs
+```
+
+
+#### Resumen estadístico de los ítems
+```{r}
+eRm::itemfit(eRm::person.parameter(rm_sums))
+```
+
+
+#### Coeficiente alfa de Cronbach
+```{r}
+alfa <- psych::alpha(respuestass, check.keys=TRUE)
+alfa$total$raw_alpha
+```
+
+
+#### Mapa Person-Item de los ítems de la prueba realizada a los alumnos de sexto primaria.
+```{r}
+plotPImap(rm_sums, item.subset = 1:18)
+plotPImap(rm_sums, item.subset = 19:33)
+```
+
+
+#### Curva característica del ítem 29
+```{r}
+plotICC(rm_sums, item.subset = 29, empICC = list("raw"), empCI = list())
+```
+
+## DIF - Comparación de la dificultad de los ítems entre los departamentos con mejor y peor nota (cuarto primaria)
+
+```{r}
+cuarto <- read_excel("data/Cuarto.xlsx")
+cuartotz <- cuarto %>% filter(Departamento %in% c("Totonicapán", "Zacapa"))
+grupo <- as.factor(cuartotz$Departamento)
+respuestastz <- cuartotz[, 44:73]
+table(grupo)
+levels(grupo) <- c("Totonicapán", "Zacapa")
+```
+
+### Test de Wald
+
+```{r}
+tz.RM <- RM(respuestastz)
+subgroup_diffs <- Waldtest(tz.RM , splitcr = grupo)
+subgroup_1_diffs <- subgroup_diffs$betapar1
+subgroup_2_diffs <- subgroup_diffs$betapar2
+dif <- -subgroup_1_diffs + subgroup_2_diffs
+```
+
+
+```{r}
+comparisons <- as.data.frame(subgroup_diffs$coef.table)
+comparacion <- data.frame("Dificultad Zacapa" = -subgroup_2_diffs,
+                          #"SD DZ" = subgroup_diffs$se.beta2,
+                          "Dificultad Totonicapán" = -subgroup_1_diffs,
+                          #"SD DT" = subgroup_diffs$se.beta1,
+                          "Diferencia" = dif,
+                          "p" = comparisons$`p-value`)
+
+comparacion %>% arrange(Diferencia)
+```
+
+
+### Prueba de Razón de Verosimilitud de Andersen
+```{r}
+lrt_dep <- LRtest(tz.RM, splitcr = grupo)
+lrt_dep
+```
+
+### Prueba Gráfica
+```{r}
+plotGOF(lrt_dep, beta.subset = c(8, 21, 19, 12, 4, 20, 29, 11, 22, 24),
+        tlab = "item", pos = 1,
+        main = "Dificultad por departamento", 
+        conf = list(gamma = 0.95, col = 4))
+plotGOF(lrt_dep, beta.subset = c(8, 19, 12, 4, 20), 
+        tlab = "item", pos = 1,
+        main = "Dificultad por departamento", 
+        conf = list(gamma = 0.95, col = 4))
+```
+
+
+## Dificultad de los ítems utilizando modelos lógisticos de 2 y 3 parámetros
+```{r}
+cuarto <- read_excel("data/Cuarto.xlsx")
+respuestasc <- cuarto[, 44:73]
+```
+
+```{r}
+mirt_rm <- mirt(respuestasc, 1, "Rasch")
+mirt_2pl <- mirt(respuestasc, 1, "2PL")
+mirt_3pl <- mirt(respuestasc, 1, "3PL")
+```
+
+### Curvas características de los ítems utilizando el modelo de Rasch y los modelos logisticos de 2 y 3 parámetros
+```{r}
+plot(mirt_rm, type = "trace", main = "Item Probability Functions RM")
+plot(mirt_2pl, type = "trace", main = "Item Probability Functions 2PL")
+plot(mirt_3pl, type = "trace", , main = "Item Probability Functions 3PL")
+```
+
+### Dificultad de los ítems obtenida con los modelos de Rasch y los modelos lógisticos de 2 y 3 parámetros
+```{r}
+theta_eap <- fscores(mirt_rm)
+theta_eap2 <- fscores(mirt_2pl)
+theta_eap3 <- fscores(mirt_3pl)
+```
+
+```{r}
+coef <- coef(mirt_rm, IRTpars = TRUE)
+coef_rm <- c(coef$Item1[2], coef$Item2[2], coef$Item3[2], coef$Item4[2], 
+             coef$Item5[2], coef$Item6[2], coef$Item7[2], coef$Item8[2],
+             coef$Item9[2], coef$Item10[2], coef$Item11[2], coef$Item12[2],
+             coef$Item13[2], coef$Item14[2], coef$Item15[2], coef$Item16[2],
+             coef$Item17[2], coef$Item18[2], coef$Item19[2], coef$Item20[2],
+             coef$Item21[2], coef$Item22[2], coef$Item23[2], coef$Item24[2],
+             coef$Item25[2], coef$Item26[2], coef$Item27[2], coef$Item28[2],
+             coef$Item29[2], coef$Item30[2])
+coef2 <- coef(mirt_2pl, IRTpars = TRUE)
+coef_2pl <- c(coef2$Item1[2], coef2$Item2[2], coef2$Item3[2], coef2$Item4[2], 
+             coef2$Item5[2], coef2$Item6[2], coef2$Item7[2], coef2$Item8[2],
+             coef2$Item9[2], coef2$Item10[2], coef2$Item11[2], coef2$Item12[2],
+             coef2$Item13[2], coef2$Item14[2], coef2$Item15[2], coef2$Item16[2],
+             coef2$Item17[2], coef2$Item18[2], coef2$Item19[2], coef2$Item20[2],
+             coef2$Item21[2], coef2$Item22[2], coef2$Item23[2], coef2$Item24[2],
+             coef2$Item25[2], coef2$Item26[2], coef2$Item27[2], coef2$Item28[2],
+             coef2$Item29[2], coef2$Item30[2])
+coef3 <- coef(mirt_3pl, IRTpars = TRUE)
+coef_3pl <- c(coef3$Item1[2], coef3$Item2[2], coef3$Item3[2], coef3$Item4[2], 
+             coef3$Item5[2], coef3$Item6[2], coef3$Item7[2], coef3$Item8[2],
+             coef3$Item9[2], coef3$Item10[2], coef3$Item11[2], coef3$Item12[2],
+             coef3$Item13[2], coef3$Item14[2], coef3$Item15[2], coef3$Item16[2],
+             coef3$Item17[2], coef3$Item18[2], coef3$Item19[2], coef3$Item20[2],
+             coef3$Item21[2], coef3$Item22[2], coef3$Item23[2], coef3$Item24[2],
+             coef3$Item25[2], coef3$Item26[2], coef3$Item27[2], coef3$Item28[2],
+             coef3$Item29[2], coef3$Item30[2])
+```
+
+```{r}
+itempar <- data.frame(item = 1:30,
+                      dificultad_RM = coef_rm,
+                      dificultad_2pl = coef_2pl,
+                      dificultad_3pl = coef_3pl)
+itempar %>% arrange(dificultad_RM)
+```
+
+## Habilidad de los estudiantes obtenida con los modelos de Rasch y los modelos lógisticos de 2 y 3 parámetros
+
+```{r}
+personpar <- data.frame(codigo = cuarto$code_estud,
+                        Departamento = as.factor(cuarto$Departamento),
+                        Municipio = as.factor(cuarto$Municipio),
+                        Establecimiento = as.factor(cuarto$Nom_estab),
+                        p_rm = theta_eap,
+                        p_2pl = theta_eap2,
+                        p_3pl = theta_eap3)
+names(personpar) <- c("codigo", "Departamento", "Municipio", 
+                      "Establecimiento", "habilidad_rm", 
+                      "habilidad_2pl", "habilidad_3pl")
+personpar %>% arrange(habilidad_2pl)
+```
