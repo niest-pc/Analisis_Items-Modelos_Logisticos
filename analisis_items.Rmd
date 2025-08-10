@@ -1,8 +1,7 @@
 ---
 title: "Modelo de Rasch"
-output:
-  html_document:
-    df_print: paged
+author: "Nicolás Poyón"
+output: github_document
 ---
 
 
