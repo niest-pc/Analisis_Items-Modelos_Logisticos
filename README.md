@@ -1,4 +1,4 @@
-# Analisis_Items-Modelos_Logisticos
+# Analisis de Items - Modelos Logisticos
 Análisis de Ítems utilizando el modelo de Rasch y comparando estos resultados con los que se obtienen al utilizar otros modelos logísticos. 
 
 Para el análisis se utilizaron datos proporcionados por MINEDUC/Digeduca de pruebas de matemática realizadas a estudiantes en Guatemala en los grados de cuarto, quinto y sexto primaria. Con estos datos se realizó lo siguiente:
